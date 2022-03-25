@@ -1,4 +1,6 @@
 ﻿using Confluent.Kafka;
+using KafkaConsumerAPI.Models;
+using KafkaConsumerAPI.Repository;
 
 namespace KafkaConsumerAPI.Services
 {
@@ -6,11 +8,14 @@ namespace KafkaConsumerAPI.Services
     {
         private IConfiguration _config;
         private ILogger<KafkaConsumerService> _logger;
+        private WalletMongoRepository _walletMongoRepository;
+        private WalletMongoEntity walletMongoEnity;
         public KafkaConsumerService(IConfiguration configuration, 
-            ILogger<KafkaConsumerService> logger)
+            ILogger<KafkaConsumerService> logger,WalletMongoRepository walletMongoRepository)
         {
             this._config = configuration;
             this._logger = logger;  
+            this._walletMongoRepository = walletMongoRepository;
         }
         public Task StartAsync(CancellationToken cancellationToken)
         {
@@ -36,8 +41,13 @@ namespace KafkaConsumerAPI.Services
                             var consumer = consumerBuilder.Consume
                                (cancelToken.Token);
                             var walletRequest = consumer.Message.Value;
+                            walletMongoEnity = new WalletMongoEntity();
+                            walletMongoEnity.WalletBalance = Convert.ToInt64(walletRequest);
+                            this._walletMongoRepository.Create(walletMongoEnity);
 
                             _logger.LogInformation($"Wallet Amount:{ walletRequest}");
+
+
                         }
                     }
                     catch (OperationCanceledException)
